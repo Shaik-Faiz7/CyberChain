@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>DocSec — My Documents</title>
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
+
+<style>
+/* Neon Glow */
+.glow-hover:hover {
+  box-shadow: 0 0 12px #4cc9f0, 0 0 22px #4361ee;
+  transform: translateY(-2px);
+}
+
+/* DropZone */
+#dropZone {
+  border: 2px dashed rgba(255,255,255,0.25);
+  border-radius: 14px;
+  padding: 32px;
+  text-align: center;
+  cursor: pointer;
+  transition: .3s;
+  background: rgba(255,255,255,0.05);
+}
+#dropZone.dragging {
+  border-color: #4cc9f0;
+  background: rgba(67,97,238,0.25);
+  box-shadow: 0 0 12px #4cc9f0, 0 0 32px #4361ee;
+}
+#dropZone i { font-size: 48px; margin-bottom: 10px; color: #4cc9f0; }
+#dropZone span { opacity: .7; }
+
+.fileBtn {
+  margin-top: 12px;
+  display: inline-block;
+  padding: 10px 18px;
+  background: linear-gradient(135deg, #4361ee, #3a0ca3);
+  border-radius: 10px;
+  font-weight: 600;
+  cursor: pointer;
+}
+#fileInput { display: none; }
+
+/* Color Palette */
+:root {
+  --primary: #4361ee;
+  --secondary: #3a0ca3;
+  --success: #4cc9f0;
+  --warning: #f72585;
+  --dark: #1a1a2e;
+}
+
+body {
+  background: linear-gradient(135deg, #06070f, #0f0c29, #1a1a2e);
+  color: white;
+  min-height: 100vh;
+  padding: 20px;
+  font-family: 'Segoe UI', sans-serif;
+}
+
+.container { max-width: 900px; margin: auto; }
+
+.header {
+  display: flex; justify-content: space-between; align-items: center;
+  padding-bottom: 15px;
+  border-bottom: 2px solid rgba(255,255,255,0.15);
+}
+.header .brand { display: flex; gap: 10px; align-items: center; font-size: 26px; font-weight: 700; }
+
+button {
+  padding: 12px 18px;
+  border-radius: 10px;
+  border: none;
+  background: linear-gradient(135deg, var(--primary), var(--secondary));
+  color: white;
+  font-weight: 600;
+  cursor: pointer;
+  transition: .3s;
+}
+button:hover { box-shadow: 0 0 12px #4cc9f0, 0 0 20px #3a0ca3; }
+
+.section {
+  margin-top: 25px;
+  background: rgba(255,255,255,0.05);
+  border-radius: 14px;
+  padding: 28px;
+  border: 1px solid rgba(255,255,255,0.1);
+  box-shadow: 0 5px 25px rgba(0,0,0,0.3);
+}
+
+/* Terminal Window */
+#terminalBox {
+  margin-top: 14px;
+  background: #05060c;
+  border: 1px solid rgba(76,201,240,0.4);
+  border-radius: 12px;
+  padding: 16px;
+  min-height: 120px;
+  font-family: "Consolas", "Courier New", monospace;
+  color: #4cc9f0;
+  font-size: 15px;
+  line-height: 1.5;
+  overflow: hidden;
+  white-space: pre-line;
+  position: relative;
+}
+
+/* Blinking cursor */
+.cursor {
+  display: inline-block;
+  width: 8px;
+  background: #4cc9f0;
+  animation: blink 0.8s infinite;
+}
+@keyframes blink {
+  0%,50% { opacity: 1; }
+  51%,100% { opacity: 0; }
+}
+
+#progressBarContainer {
+  width: 100%;
+  background: rgba(255,255,255,0.2);
+  border-radius: 6px;
+  height: 8px;
+  margin-top: 12px;
+  display: none;
+}
+#progressBar {
+  width: 0%;
+  height: 100%;
+  background: #4cc9f0;
+  border-radius: 6px;
+  transition: width .2s linear;
+}
+
+.file-entry {
+  display: flex; justify-content: space-between; padding: 14px;
+  border-bottom: 1px solid rgba(255,255,255,0.12);
+}
+.badge { background: rgba(76,201,240,0.12); padding: 6px 12px; border-radius: 14px; }
+.file-entry {
+  display: flex; justify-content: space-between; padding: 14px;
+  border-bottom: 1px solid rgba(255,255,255,0.12);
+}
+.badge { background: rgba(76,201,240,0.12); padding: 6px 12px; border-radius: 14px; }
+
+/* Hash history styling - ADD THESE LINES */
+details summary {
+  padding: 4px 0;
+  font-weight: 600;
+}
+details summary:hover {
+  color: #fff !important;
+}
+code {
+  background: rgba(76,201,240,0.1);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-family: 'Courier New', monospace;
+}
+.file-entry {
+  transition: all 0.3s;
+}
+.file-entry:hover {
+  background: rgba(255,255,255,0.08);
+}
+/* End of hash history styling */
+</style>
+</head>
+
+<body>
+<div class="container">
+
+  <div class="header">
+    <div class="brand"><i class="fas fa-shield-alt"></i> DOCSEC</div>
+    <div>Logged in as <strong id="user"></strong>
+      <button onclick="logout()" style="margin-left: 12px; background: var(--warning);">Logout</button>
+    </div>
+  </div>
+
+  <div class="section glow-hover">
+    <h3><i class="fas fa-cloud-upload-alt"></i> Upload PDF</h3>
+
+    <div id="dropZone">
+      <i class="fas fa-file-arrow-up"></i>
+      <p>Drag & Drop PDF here</p>
+      <span>or</span>
+      <label for="fileInput" class="fileBtn">Choose File</label>
+      <input type="file" id="fileInput" accept="application/pdf">
+    </div>
+
+    <p id="selectedFile"></p>
+
+    <div id="progressBarContainer"><div id="progressBar"></div></div>
+
+    <div id="terminalBox"></div>
+
+    <button onclick="uploadFile()" style="margin-top: 14px;"><i class="fas fa-upload"></i> Upload</button>
+    <p id="uploadMsg"></p>
+  </div>
+
+  <div class="section glow-hover">
+    <h3><i class="fas fa-folder-open"></i> Your Files</h3>
+    <div id="filesList">Loading...</div>
+  </div>
+
+</div>
+
+<script>
+const API = "http://127.0.0.1:8000";
+const username = localStorage.getItem("username");
+if(!username) location.href = "login.html";
+document.getElementById("user").innerText = username;
+
+const dropZone = document.getElementById("dropZone");
+const fileInput = document.getElementById("fileInput");
+const selectedFileLabel = document.getElementById("selectedFile");
+const terminal = document.getElementById("terminalBox");
+const progressBar = document.getElementById("progressBar");
+const progressBarContainer = document.getElementById("progressBarContainer");
+
+/* Drag & Drop */
+dropZone.addEventListener("dragover", e=>{e.preventDefault();dropZone.classList.add("dragging")});
+dropZone.addEventListener("dragleave", ()=>dropZone.classList.remove("dragging"));
+dropZone.addEventListener("drop", e=>{
+  e.preventDefault(); dropZone.classList.remove("dragging");
+  if(e.dataTransfer.files.length){ fileInput.files=e.dataTransfer.files; updateSelected(); }
+});
+dropZone.addEventListener("click", e=>{ if(e.target===dropZone) fileInput.click(); });
+fileInput.addEventListener("change", updateSelected);
+
+function updateSelected(){
+  if(fileInput.files.length){
+    selectedFileLabel.textContent="Selected: "+fileInput.files[0].name;
+    selectedFileLabel.style.color="#4cc9f0";
+  }
+}
+
+/* 🧠 Typing Animation Terminal */
+function typeLine(text){
+  return new Promise(resolve=>{
+    let i = 0;
+    const interval = setInterval(()=>{
+      if(stopSteps){ 
+        clearInterval(interval);
+        resolve();
+        return;
+      }
+
+      terminal.innerHTML = terminal.innerHTML.replace(/<span.*$/, "");
+      terminal.innerHTML = terminal.innerHTML + text.charAt(i) + `<span class="cursor"></span>`;
+      i++;
+
+      if(i > text.length){
+        clearInterval(interval);
+        terminal.innerHTML = terminal.innerHTML.replace(/<span.*$/, "") + "\n";
+        resolve();
+      }
+    }, 100); // ← keep your speed here
+  });
+}
+
+
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+let stopSteps = false;
+
+/* Upload logic w/ animated pipeline */
+async function uploadFile(){
+  const file=fileInput.files[0];
+  const msg=document.getElementById("uploadMsg");
+  if(!file){ msg.textContent="Select a PDF"; return; }
+
+  terminal.textContent="";
+  stopSteps = false;
+  progressBarContainer.style.display="block";
+  progressBar.style.width="0%";
+  msg.textContent="";
+
+  const steps = [
+    "Uploading file…",
+    "Running OCR…",
+    "Running OCR…",
+    "Running OCR…",
+    "Running OCR…",
+    "Identifying Document Type (AI)…",
+    "Classifying",
+    "Classifying",
+    "Classifying",
+    "Classifying",
+    "Identifying Document Type (AI)…",
+    "Identifying Document Type (AI)…",
+    "Extracting Metadata…",
+    "Encrypting PDF…",
+    "Storing Securely…",
+    "Finalizing…"
+  ];
+
+  (async()=>{ for(const step of steps){ await typeLine(step); await sleep(1000); } })();
+
+  const form=new FormData();
+  form.append("username",username);
+  form.append("file",file);
+
+  const xhr=new XMLHttpRequest();
+  xhr.open("POST", API+"/upload");
+
+  xhr.upload.onprogress=e=>{
+    if(e.lengthComputable){ progressBar.style.width=((e.loaded/e.total)*100)+"%"; }
+  };
+
+  xhr.onload=()=>{
+    stopSteps = true;
+    const res=JSON.parse(xhr.responseText);
+    if(res.status==="success"){
+      terminal.innerHTML+="\nâœ… Completed Successfully\n";
+      
+      // Display hash in terminal
+      if(res.hash){
+        terminal.innerHTML+=`\nðŸ"' Document Hash: ${res.hash}\n`;
+      }
+      
+      msg.style.color="#4cc9f0";
+      msg.textContent=`Detected: ${res.doc_type} (${Math.round((res.confidence||0)*100)}%)`;
+      selectedFileLabel.textContent="";
+      fileInput.value="";
+      loadFiles();
+    } else {
+      terminal.innerHTML+="\n❌ Duplicate Detected\n";
+      msg.style.color="#f72585";
+      msg.textContent=res.message||"Upload failed";
+    }
+  };
+
+  xhr.send(form);
+}
+
+/* Load Files */
+function typeBadge(type,confidence){
+  const icon="📄";
+  const conf=confidence?` (${Math.round(confidence*100)}%)`:"";
+  return `<span class="badge">${icon} ${type}${conf}</span>`;
+}
+async function loadFiles(){
+  const box=document.getElementById("filesList");
+  box.innerHTML="Loading...";
+  const res=await fetch(`${API}/user/files/${username}`);
+  const files=await res.json();
+  box.innerHTML=files.length?"":"<em>No files yet</em>";
+  
+  files.forEach(f=>{
+    const hashHistory = f.hash_history || [];
+    const isTampered = hashHistory.length > 1;
+    
+    // ✅ Only show hash history if file has multiple versions (tampered)
+    let hashDisplay = "";
+    if(isTampered){
+      hashDisplay = `
+        <div style="margin-top: 8px; font-size: 12px; color: #f72585;">
+          <strong>⚠️ TAMPERING DETECTED</strong><br>
+          <details open>
+            <summary style="cursor: pointer; color: #4cc9f0;">
+              <i class="fas fa-fingerprint"></i> Hash History (${hashHistory.length})
+            </summary>
+            <div style="margin-top: 6px; padding: 8px; background: rgba(0,0,0,0.3); border-radius: 6px; max-height: 150px; overflow-y: auto;">
+              ${hashHistory.map((h, idx) => `
+                <div style="margin-bottom: 6px; padding: 4px; border-left: 2px solid ${idx === 0 ? '#4cc9f0' : '#f72585'};">
+                  <strong>${idx === 0 ? 'Latest' : 'Version ' + (hashHistory.length - idx)}</strong><br>
+                  <code style="font-size: 10px; word-break: break-all;">${h.hash}</code><br>
+                  <em style="font-size: 11px; opacity: 0.7;">${h.time}</em>
+                </div>
+              `).join('')}
+            </div>
+          </details>
+        </div>
+      `;
+    } else if(hashHistory.length === 1){
+      // ✅ Show single hash in collapsed state (click to view)
+      hashDisplay = `
+        <div style="margin-top: 8px; font-size: 12px;">
+          <details>
+            <summary style="cursor: pointer; color: #4cc9f0;">
+              <i class="fas fa-fingerprint"></i> View Hash
+            </summary>
+            <code style="font-size: 10px; word-break: break-all; color: #4cc9f0;">${hashHistory[0].hash}</code>
+          </details>
+        </div>
+      `;
+    }
+    
+    box.innerHTML+=`
+      <div class="file-entry glow-hover" style="border-left: 3px solid ${isTampered ? '#f72585' : 'transparent'};">
+        <div>
+          <strong>${f.orig_filename}</strong><br>
+          ${typeBadge(f.type,f.confidence)}
+          ${hashDisplay}
+        </div>
+        <button onclick="downloadFile('${f.filename}')"><i class="fas fa-download"></i></button>
+      </div>
+    `;
+  });
+}
+function downloadFile(filename){ window.location.href=`${API}/download/${username}/${filename}`; }
+function logout(){ localStorage.removeItem("username"); location.href="login.html"; }
+
+loadFiles();
+</script>
+
+</body>
+</html>
